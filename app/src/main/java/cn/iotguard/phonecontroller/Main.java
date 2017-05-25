@@ -10,6 +10,7 @@ import android.support.v4.view.InputDeviceCompat;
 import android.view.InputEvent;
 import android.view.MotionEvent;
 
+import com.cj.ScreenShotUtil.ShellUtils;
 import com.koushikdutta.async.http.WebSocket;
 import com.koushikdutta.async.http.server.AsyncHttpServer;
 import com.koushikdutta.async.http.server.AsyncHttpServerRequest;
@@ -18,6 +19,8 @@ import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -51,6 +54,18 @@ public class Main {
         Looper.prepare();
         System.out.println("PhoneController start...");
         sTimer = new Timer();
+
+        try{
+            List<String> cmds = new ArrayList<>();
+            cmds.add("setprop service.adb.tcp.port 5555\n");
+            cmds.add("stop adbd\n");
+            cmds.add("start adbd\n");
+            ShellUtils.execCommand(cmds,true);
+            System.out.println("port 5555 open" );
+        }catch (Exception e){
+            System.out.println("error: " + e.getMessage());
+        }
+
         try {
             sInputManager = (InputManager) InputManager.class.getDeclaredMethod("getInstance").invoke(null);
             sInjectInputEventMethod = InputManager.class.getMethod("injectInputEvent", InputEvent.class, Integer.TYPE);
@@ -61,6 +76,7 @@ public class Main {
         } catch (Exception e) {
             System.out.println("error: " + e.getMessage());
         }
+
     }
 
     private static class InputHandler implements AsyncHttpServer.WebSocketRequestCallback {
@@ -101,8 +117,8 @@ public class Main {
                                     sViewerIsAlive = true;
                                     break;
                                 case KEY_CHANGE_SIZE:
-//                                    sPictureWidth = event.getInt("w");
-//                                    sPictureHeight = event.getInt("h");
+                                    sPictureWidth = event.getInt("w");
+                                    sPictureHeight = event.getInt("h");
                                     sRotate = event.getInt("r");
                                     break;
                             }
@@ -159,7 +175,7 @@ public class Main {
                     if (bitmap != null) {
                     Bitmap resultBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
                     ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                    resultBitmap.compress(Bitmap.CompressFormat.PNG, 10, bout);
+                    resultBitmap.compress(Bitmap.CompressFormat.PNG, 1, bout);
                     bout.flush();
                     mWebSocket.send(bout.toByteArray());
                     } else {
