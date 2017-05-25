@@ -12,11 +12,11 @@
 		</canvas>
     </body>
     <script>
-    var screenFile = 'http://localhost:56789/screenshot.jpg?';
-    var ws = new WebSocket('ws://localhost:56789/input');
+    var screenFile = 'http://10.0.0.15:56789/screenshot.jpg?';
+    var ws = new WebSocket('ws://10.0.0.15:56789/input');
     var initScreenWidth = 1280;
     var initScreenHeight = 720;
-    var initRotate = 90;
+    var initRotate = 0;
     var screen = document.getElementById('screen');
     var ctx = screen.getContext("2d");
     var shouldSendMoveEvent = false;

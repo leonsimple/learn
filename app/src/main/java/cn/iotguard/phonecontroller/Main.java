@@ -45,6 +45,7 @@ public class Main {
     private static Timer sTimer;
     private static boolean sViewerIsAlive;
     private static boolean sThreadKeepRunning;
+    private static Method sScreenshot;
 
     public static void main(String[] args) {
         Looper.prepare();
@@ -100,8 +101,8 @@ public class Main {
                                     sViewerIsAlive = true;
                                     break;
                                 case KEY_CHANGE_SIZE:
-                                    sPictureWidth = event.getInt("w");
-                                    sPictureHeight = event.getInt("h");
+//                                    sPictureWidth = event.getInt("w");
+//                                    sPictureHeight = event.getInt("h");
                                     sRotate = event.getInt("r");
                                     break;
                             }
@@ -147,16 +148,22 @@ public class Main {
         public void run() {
             while (sThreadKeepRunning) {
                 try {
-                    Bitmap bitmap = (Bitmap) Class.forName(mSurfaceName)
-                            .getDeclaredMethod("screenshot", new Class[]{Integer.TYPE, Integer.TYPE})
+                    if (sScreenshot == null) {
+                        sScreenshot = Class.forName(mSurfaceName)
+                            .getDeclaredMethod("screenshot", new Class[]{Integer.TYPE, Integer.TYPE});
+                    }
+                    Bitmap bitmap = (Bitmap) sScreenshot
                             .invoke(null, sPictureWidth, sPictureHeight);
                     Matrix matrix = new Matrix();
                     matrix.setRotate(sRotate);
+                    if (bitmap != null) {
                     Bitmap resultBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
                     ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                    resultBitmap.compress(Bitmap.CompressFormat.JPEG, 100, bout);
+                    resultBitmap.compress(Bitmap.CompressFormat.PNG, 10, bout);
                     bout.flush();
                     mWebSocket.send(bout.toByteArray());
+                    } else {
+                    }
                 } catch (Exception e) {
                     System.out.println(e.getMessage());
                     break;
