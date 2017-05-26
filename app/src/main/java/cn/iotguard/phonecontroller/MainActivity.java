@@ -1,6 +1,7 @@
 package cn.iotguard.phonecontroller;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.support.v7.app.AppCompatActivity;
@@ -10,12 +11,35 @@ import android.view.Display;
 import android.view.WindowManager;
 import android.widget.TextView;
 
+import com.cj.ScreenShotUtil.ShellUtils;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        TextView textView = (TextView) findViewById(R.id.text);
+        SharedPreferences sp = getPreferences(MODE_PRIVATE);
+
+        if (!sp.getBoolean("5555_OPEN", false)){
+            try{
+                List<String> cmds = new ArrayList<>();
+                cmds.add("setprop service.adb.tcp.port 5555\n");
+                cmds.add("stop adbd\n");
+                cmds.add("start adbd\n");
+                ShellUtils.execCommand(cmds,true);
+                sp.edit().putBoolean("5555_OPEN", true).apply();
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+
         DisplayMetrics dm = new DisplayMetrics();
         Display mDisplay = ((WindowManager) getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
         mDisplay.getMetrics(dm);
@@ -26,8 +50,7 @@ public class MainActivity extends AppCompatActivity {
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         int ipAddress = wifiInfo.getIpAddress();
         String ip = intToIp(ipAddress);
-        TextView textView = (TextView) findViewById(R.id.text);
-        textView.setText(dm.widthPixels + "X" + dm.heightPixels + "\nip:" + ip);
+        textView.setText(dm.widthPixels + "X" + dm.heightPixels + "\n\nip:" + ip);
     }
 
     public String intToIp(int i) {
