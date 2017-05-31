@@ -8,6 +8,7 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.support.v4.view.InputDeviceCompat;
 import android.view.InputEvent;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import com.koushikdutta.async.http.WebSocket;
@@ -17,8 +18,12 @@ import com.koushikdutta.async.http.server.AsyncHttpServerRequest;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -35,6 +40,10 @@ public class Main {
     private static final String KEY_CHANGE_SIZE = "change_size";
     private static final String KEY_BEATHEART = "beatheart";
     private static final String KEY_EVENT_TYPE = "type";
+    private static final String KEY_BACK= "back";
+    private static final String KEY_HOME = "home";
+    private static final String KEY_QUALITY = "quality";
+    private static final String KEY_MENU = "menu";
     private static InputManager sInputManager;
     private static Method sInjectInputEventMethod;
     private static final float BASE_WIDTH = 720;
@@ -47,17 +56,15 @@ public class Main {
     private static boolean sViewerIsAlive;
     private static boolean sThreadKeepRunning;
     private static Method sScreenshot;
+    private static int quality = 20;
 
     public static void main(String[] args) {
         Looper.prepare();
         System.out.println("PhoneController start...");
         sTimer = new Timer();
-        String ip;
 
             try {
-                InetAddress addr = InetAddress.getLocalHost();
-                ip = addr.getHostAddress();
-                System.out.print("ip:" + ip);
+                getGPRSLocalIpAddress();
 
                 sInputManager = (InputManager) InputManager.class.getDeclaredMethod("getInstance").invoke(null);
                 sInjectInputEventMethod = InputManager.class.getMethod("injectInputEvent", InputEvent.class, Integer.TYPE);
@@ -69,6 +76,25 @@ public class Main {
                 System.out.println("error: " + e.getMessage());
             }
 
+    }
+
+    public static String getGPRSLocalIpAddress() {
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface
+                    .getNetworkInterfaces(); en.hasMoreElements();) {
+                NetworkInterface intf = en.nextElement();
+                for (Enumeration<InetAddress> enumIpAddr = intf
+                        .getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    if (!inetAddress.isLoopbackAddress()) {
+                        System.out.println("ip:  " + inetAddress.getHostAddress() );
+                    }
+                }
+            }
+        } catch (SocketException ex) {
+            System.out.println("error" + ex.getMessage());
+        }
+        return null;
     }
 
     private static class InputHandler implements AsyncHttpServer.WebSocketRequestCallback {
@@ -84,6 +110,7 @@ public class Main {
                     @Override
                     public void onStringAvailable(String s) {
                         try {
+                            System.out.println(s);
                             JSONObject event = new JSONObject(s);
                             String eventType = event.getString(KEY_EVENT_TYPE);
                             switch (eventType) {
@@ -112,6 +139,20 @@ public class Main {
 //                                    sPictureWidth = event.getInt("w");
 //                                    sPictureHeight = event.getInt("h");
                                     sRotate = event.getInt("r");
+                                    break;
+                                case KEY_BACK:
+                                    sendKeyEvent(sInputManager, sInjectInputEventMethod, 257, 4, false);
+                                    break;
+                                case KEY_HOME:
+                                    sendKeyEvent(sInputManager, sInjectInputEventMethod, 257, 3, false);
+                                    break;
+                                case KEY_QUALITY:
+                                    int q = event.getInt("q");
+                                    System.out.println("q:"+ q);
+                                    quality = q;
+                                    break;
+                                case KEY_MENU:
+                                    sendKeyEvent(sInputManager, sInjectInputEventMethod, 257, 187, false);
                                     break;
                             }
                         } catch (Exception e) {
@@ -165,11 +206,11 @@ public class Main {
                     Matrix matrix = new Matrix();
                     matrix.setRotate(sRotate);
                     if (bitmap != null) {
-                    Bitmap resultBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
-                    ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                    resultBitmap.compress(Bitmap.CompressFormat.PNG, 1, bout);
-                    bout.flush();
-                    mWebSocket.send(bout.toByteArray());
+                        Bitmap resultBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
+                        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                        resultBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bout);
+                        bout.flush();
+                        mWebSocket.send(bout.toByteArray());
                     } else {
                     }
                 } catch (Exception e) {
@@ -190,5 +231,27 @@ public class Main {
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
+    }
+
+    private static void sendKeyEvent(InputManager paramInputManager, Method paramMethod, int paramInt1, int paramInt2, boolean paramBoolean)
+            throws InvocationTargetException, IllegalAccessException
+    {
+        long l = SystemClock.uptimeMillis();
+        if (paramBoolean);
+        for (int i = 1; ; i = 0)
+        {
+            injectKeyEvent(paramInputManager, paramMethod, new KeyEvent(l, l, 0, paramInt2, 0, i, -1, 0, 0, paramInt1));
+            injectKeyEvent(paramInputManager, paramMethod, new KeyEvent(l, l, 1, paramInt2, 0, i, -1, 0, 0, paramInt1));
+            return;
+        }
+    }
+
+    private static void injectKeyEvent(InputManager paramInputManager, Method paramMethod, KeyEvent paramKeyEvent)
+            throws InvocationTargetException, IllegalAccessException
+    {
+        Object[] arrayOfObject = new Object[2];
+        arrayOfObject[0] = paramKeyEvent;
+        arrayOfObject[1] = Integer.valueOf(0);
+        paramMethod.invoke(paramInputManager, arrayOfObject);
     }
 }

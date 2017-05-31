@@ -1,7 +1,7 @@
 usage:
 ```
 要求root
-1. app/src/main/res/raw直接在该路径使用Terminal
+1. \cmd  直接在该路径使用Terminal
 2. usb连接手机，执行以下adb 指令
 ```
 adb install app-debug.apk
@@ -11,9 +11,10 @@ adb shell "export CLASSPATH=/data/app/cn.iotguard.phonecontroller-1/base.apk;exe
 
 做的事情很简单，手机安装apk，然后进行了端口映射，最后启动服务程序。
 
-3.打开手机开app查看手机IP
-首次打开会开启手机5555端口，并重启手机adb进程，
- adb连接会中断，输入 adb connect IP 连接手机
+3.
+启动应用查看手机IP
+首次打开会开启手机5555端口，并重启手机adb进程，这是usb连接的
+ adb连接会中断，输入 adb connect IP 远程调试手机
 
  打开`viewer.html`
  更换文件中IP

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Android Controller</title>
+    <meta charset="utf-8"/>
+</head>
+<body>
+<div>
+
+    <button id="menu">菜单</button>
+    <button id="home">主页</button>
+    <button id="back">返回</button>
+    <br/>
+    <input id="in" type="text" value="" size="22" placeholder="取值范围0至80"/><br/>
+    <input id="submit" type="submit" value="变更清晰度"><br/>
+    <br/>
+    <canvas id="screen">
+        Your browser does not support the HTML5 canvas tag.
+    </canvas>
+</div>
+</body>
+<script>
+    var ws = new WebSocket('ws://10.0.0.15:56789/input');
+    var initScreenWidth = 1280;
+    var initScreenHeight = 720;
+    var initRotate = 0;
+    var screen = document.getElementById('screen');
+    var ctx = screen.getContext("2d");
+    var shouldSendMoveEvent = false;
+    ws.onopen = function(event) {
+    	resizePicture();
+    };
+    ws.onmessage = function(event) {
+    	var blob  = new Blob([event.data], {type: "image/jpg"});
+  		var img = new Image();
+		img.onload = function (e) {
+			ctx.drawImage(img, 0, 0);
+			window.URL.revokeObjectURL(img.src);    
+			img = null;
+		};
+		img.onerror = img.onabort = function () {    
+			img = null;
+		};
+		img.src = window.URL.createObjectURL(blob);
+    };
+    ws.onclose = function(event) {
+        alert("adb websocket close");
+    };
+    var down = function(event) {
+        shouldSendMoveEvent = true;
+        sendFingerPosition("fingerdown", event);
+    };
+    var up = function(event) {
+    	sendFingerPosition("fingerup", event)
+        shouldSendMoveEvent = false;
+    };
+    var move = function(event) {
+        if (shouldSendMoveEvent) {
+        	sendFingerPosition("fingermove", event);
+        }
+    };
+    var sendFingerPosition = function(type, event) {
+    	var x = event.pageX - screen.offsetLeft;
+        var y = event.pageY - screen.offsetTop;
+        var lastX = x;
+        var lastY = y;
+        if (initRotate == 90) {
+        	lastX = y;
+        	lastY = initScreenWidth - x;
+        } else if (initRotate == 180) {
+        	lastX = initScreenWidth - x;
+        	lastY = initScreenHeight - y;
+        } else if (initRotate == 270) {
+        	lastX = initScreenHeight - y;
+        	lastY = x;
+        }
+        var eventjson = '{"type":"'+type+'","x":'+lastX+',"y":'+lastY+'}';
+        ws.send(eventjson);
+    };
+    var heartbeat = function() {
+    	ws.send('{"type":"beatheart"}');
+    };
+
+    var resizeCanvas = function() {
+    	screen.width = initScreenWidth;
+    	screen.height = initScreenHeight;
+    };
+
+    var resizePicture = function() {
+    	if (initScreenWidth <= initScreenHeight) {
+    		ws.send('{"type":"change_size", "w":'+initScreenWidth+', "h":'+initScreenHeight+', "r":'+ initRotate+'}');
+    	} else {
+    		ws.send('{"type":"change_size", "w":'+initScreenHeight+', "h":'+initScreenWidth+', "r":'+ initRotate+'}');
+    	}
+    };
+
+    var back = function() {
+        ws.send('{"type":"back"}');
+    };
+
+    var home = function() {
+        ws.send('{"type":"home"}');
+    };
+
+    var menu = function() {
+        ws.send('{"type":"menu"}');
+    };
+
+    var change = function() {
+        var x = document.getElementById("in").value;
+        if(x>80) x = 80;
+        if(x<0) x = 0;
+        ws.send('{"type":"quality", "q":'+x+'}');
+    };
+
+    var buttonHandler = function(e) {
+    	switch(e.target.id) {
+            case "back":
+                back();
+    			break;
+    		case "home":
+                home();
+    			break;
+            case "submit":
+                change();
+    			break;
+    		case "menu":
+                menu();
+    			break;
+    	}
+    };
+    resizeCanvas();
+    screen.addEventListener('mousedown', down, false);
+    screen.addEventListener('mouseup', up, false);
+    screen.addEventListener('mousemove', move, false);
+    document.getElementById('back').addEventListener('click', buttonHandler, false);
+    document.getElementById('home').addEventListener('click', buttonHandler, false);
+    document.getElementById('submit').addEventListener('click', buttonHandler, false);
+    document.getElementById('menu').addEventListener('click', buttonHandler, false);
+    setInterval("heartbeat()", 2000);
+
+</script>
+</html>
