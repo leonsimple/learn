@@ -57,10 +57,12 @@ public class Main {
     private static boolean sThreadKeepRunning;
     private static Method sScreenshot;
     private static int quality = 20;
+    private static Matrix sMatrix;
 
     public static void main(String[] args) {
         Looper.prepare();
         System.out.println("PhoneController start...");
+        sMatrix = new Matrix();
         sTimer = new Timer();
 
             try {
@@ -201,17 +203,18 @@ public class Main {
                         sScreenshot = Class.forName(mSurfaceName)
                             .getDeclaredMethod("screenshot", new Class[]{Integer.TYPE, Integer.TYPE});
                     }
+                    Thread.sleep(50);
                     Bitmap bitmap = (Bitmap) sScreenshot
                             .invoke(null, sPictureWidth, sPictureHeight);
-                    Matrix matrix = new Matrix();
-                    matrix.setRotate(sRotate);
+                    sMatrix.setRotate(sRotate);
                     if (bitmap != null) {
-                        Bitmap resultBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, false);
+                        Bitmap resultBitmap = Bitmap.createBitmap(bitmap, 0, 0, sPictureWidth, sPictureHeight, sMatrix, false);
                         ByteArrayOutputStream bout = new ByteArrayOutputStream();
                         resultBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bout);
                         bout.flush();
                         mWebSocket.send(bout.toByteArray());
                     } else {
+                        System.out.println("bitmap is null");
                     }
                 } catch (Exception e) {
                     System.out.println(e.getMessage());

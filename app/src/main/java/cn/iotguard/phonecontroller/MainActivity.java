@@ -1,7 +1,6 @@
 package cn.iotguard.phonecontroller;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
@@ -13,18 +12,17 @@ import android.widget.TextView;
 
 import com.cj.ScreenShotUtil.ShellUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class MainActivity extends AppCompatActivity {
+
+    private String mText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        TextView textView = (TextView) findViewById(R.id.text);
+        final TextView textView = (TextView) findViewById(R.id.text);
 //        SharedPreferences sp = getPreferences(MODE_PRIVATE);
-
+//
 //        if (!sp.getBoolean("5555_OPEN", false)){
 //            try{
 //                List<String> cmds = new ArrayList<>();
@@ -49,14 +47,22 @@ public class MainActivity extends AppCompatActivity {
         WifiInfo wifiInfo = wifiManager.getConnectionInfo();
         int ipAddress = wifiInfo.getIpAddress();
         String ip = intToIp(ipAddress);
-        textView.setText(dm.widthPixels + "X" + dm.heightPixels + "\n\nip:" + ip);
+        mText = dm.widthPixels + "X" + dm.heightPixels + "\n\nip:" + ip;
         new Thread(new Runnable() {
             @Override
             public void run() {
-                ShellUtils.execCommand("export CLASSPATH=/data/app/cn.iotguard.phonecontroller-2/base.apk;exec app_process /system/bin cn.iotguard.phonecontroller.Main",true);
-
+                ShellUtils.CommandResult commandResult = ShellUtils.execCommand("export CLASSPATH=/data/app/cn.iotguard.phonecontroller-1/base.apk;exec app_process /system/bin cn.iotguard.phonecontroller.Main", true);
+                mText = mText + "\n\n result:errorMsg" + commandResult.errorMsg + "result:successMsg" + commandResult.successMsg;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        textView.setText(mText);
+                    }
+                });
             }
         }).start();
+        textView.setText(mText);
+
     }
 
     public String intToIp(int i) {
