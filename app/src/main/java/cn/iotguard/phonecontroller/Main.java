@@ -203,7 +203,7 @@ public class Main {
                         sScreenshot = Class.forName(mSurfaceName)
                             .getDeclaredMethod("screenshot", new Class[]{Integer.TYPE, Integer.TYPE});
                     }
-                    Thread.sleep(50);
+                    Thread.sleep(60);
                     Bitmap bitmap = (Bitmap) sScreenshot
                             .invoke(null, sPictureWidth, sPictureHeight);
                     sMatrix.setRotate(sRotate);
@@ -213,6 +213,7 @@ public class Main {
                         resultBitmap.compress(Bitmap.CompressFormat.JPEG, quality, bout);
                         bout.flush();
                         mWebSocket.send(bout.toByteArray());
+                        resultBitmap.recycle();
                     } else {
                         System.out.println("bitmap is null");
                     }

@@ -20,7 +20,7 @@
 </div>
 </body>
 <script>
-    var ws = new WebSocket('ws://192.168.1.208:56789/input');
+    var ws = new WebSocket('ws://10.0.0.6:56789/input');
     var initScreenWidth = 1280;
     var initScreenHeight = 720;
     var initRotate = 0;
@@ -44,7 +44,8 @@
 		img.src = window.URL.createObjectURL(blob);
     };
     ws.onclose = function(event) {
-        alert("adb websocket close");
+        console.log("ws close");
+        window.location.reload();
     };
     var down = function(event) {
         shouldSendMoveEvent = true;
